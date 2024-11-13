@@ -1,14 +1,12 @@
 import {ShaderMaterial} from 'three';
 export class GradientMaterial {
-  constructor(gradColor1: string, gradColor2: string, hoverColor: string){
-    // const gradColor1 = `${15/255}, ${27/255}, ${50/255}`;
-    // const gradColor2 = `${43/255}, ${79/255}, ${104/255}`;
+  constructor(gradColor1: string, gradColor2: string, hoverColor: string, gradUVParams: any){
     const v3GradColor1 = hexToVec3(gradColor1);
     const v3GradColor2 = hexToVec3(gradColor2);
     const v3HoverColor = hexToVec3(hoverColor);
     return new ShaderMaterial({
       vertexShader,
-      fragmentShader: fragmentShader(v3GradColor1, v3GradColor2, v3HoverColor),
+      fragmentShader: fragmentShader(v3GradColor1, v3GradColor2, v3HoverColor, gradUVParams),
       uniforms: {
         hover: {value: false}
       }
@@ -35,11 +33,11 @@ const vertexShader = `
   varying vec2 vUV;
   void main() {
     gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
-    vUV = (uv + 50.) / 100.;
+    vUV = uv;
   }
 `;
 
-const fragmentShader = (color1: number[], color2: number[], hoverColor: number[]) => `
+const fragmentShader = (color1: number[], color2: number[], hoverColor: number[], {midX, midY, disX, disY}: any) => `
   varying vec2 vUV;
   uniform bool hover;
   void main() {
@@ -48,10 +46,13 @@ const fragmentShader = (color1: number[], color2: number[], hoverColor: number[]
       return;
     }
     float t = vUV.y;
+    float k1 = (vUV.x - ${midX}) / ${disX} + 0.5;
+    float k2 = 0.5 - (vUV.y - ${midY}) / ${disY};
+    float k = k1 + k2;
+    k1 /= k;
+    k2 /= k;
     vec3 color1 = vec3(${color1.join(', ')});
     vec3 color2 = vec3(${color2.join(', ')});
-    float k1 = (vUV.x + vUV.y) / 2.;
-    float k2 = 1. - k1;
     vec3 finalColor = color1 * k1 + color2 * k2;
     gl_FragColor = vec4(finalColor, 1.);
   }
